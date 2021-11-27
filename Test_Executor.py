@@ -1,4 +1,5 @@
-from network_playground import NetworkPlayGround
+from json import load
+from network_playground import Network_Playground
 
 class Test_Executor(Process):
 	
@@ -13,7 +14,7 @@ class Test_Executor(Process):
 
 		## To support offline mode we will be reading the testcases/scenarios from the file
 		## to which test generator had written all the testcases.
-		with open(file_path) as f:
+		with open(file_path):
             data = load(f)
 
         self.num_of_nodes = data['num_of_nodes']
