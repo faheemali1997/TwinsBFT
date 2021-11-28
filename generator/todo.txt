@@ -1,0 +1,10 @@
+1. Config
+2. Leader election
+3. Safety
+4. Liveness
+5. Integrate with generator
+6. Process identifier complete
+7. Logs
+8. Comments
+9. Fix bugs
+10. Test
