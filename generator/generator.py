@@ -109,7 +109,7 @@ class TestGenerator:
         # select two nodes within random partition and drop the messages among them
         li = random.sample(range(0, len(partition) - 1), 2)
 
-        return li
+        return [partition[idx][li[0]], partition[idx][li[1]]]
 
     def get_json_dump(self, testcases):
 
