@@ -1,3 +1,7 @@
 {
-
+  "num_nodes": 7,
+  "byzentine_nodes": 2,
+  "rounds": 2,
+  "limit_test_cases": 10,
+  "output_file_name": "testcase_generator"
 }

@@ -1,6 +1,6 @@
 import random
 
-from stringling import stirling2
+from generator.stringling import stirling2
 from itertools import product
 from json import dumps
 from collections import defaultdict
@@ -12,7 +12,7 @@ import os
 
 class TestGenerator:
 
-    def __init__(self, nodes: list, rounds: int, limit : int, randomness: bool = True):
+    def __init__(self, config):
         """
         0 1 2 3 4.....n -> Nodes
         0 1 2 3 4.....f -> byzentine nodes
@@ -24,14 +24,22 @@ class TestGenerator:
         0 1       | 2 3 4 5 6  | 7 8
 
         """
+        num_nodes = int(config['nvalidators'])
+        rounds = int(config['rounds'])
+        limit = int(config['limit_test_cases'])
+        randomness = config['randomness'] == 'True'
+        num_byzentine = int(config['nfaulty'])
+        self.num_partitions = int(config['partitions'])
+        nodes = [i for i in range(num_nodes)]
         self.total_nodes = nodes
         self.rounds = rounds
-        self.number_of_byzentine_nodes = (len(nodes) - 1) // 3
+        self.number_of_byzentine_nodes = num_byzentine
         self.byzentine_nodes = [w for w in range(self.number_of_byzentine_nodes)]
         self.nodes = [w for w in range(len(self.total_nodes) + len(self.byzentine_nodes))]
         self.limit = limit
         self.twins = self.generate_twins(self.byzentine_nodes)
         self.randomness = randomness
+        self.output_file = config['output_file_name']
 
     def generate_twins(self, byzentine_nodes: list):
 
@@ -47,9 +55,9 @@ class TestGenerator:
         assert node in self.byzentine_nodes
         return self.nodes[len(self.total_nodes) - 1 + node]
 
-    def make_partitions(self, limit: int, partitions: int):
+    def make_partitions(self, limit: int = 4):
 
-        return stirling2(len(self.nodes), min(limit, partitions))
+        return stirling2(len(self.nodes), min(limit, self.num_partitions))
 
     def combine_leader_partition_random(self, partitions):
 
@@ -63,7 +71,10 @@ class TestGenerator:
 
             partition = partitions[random_partition]
 
-            leader = random.randint(0, len(all_leaders) - 1)
+            if len(all_leaders) == 0:
+                leader = 0
+            else:
+                leader = random.randint(0, len(all_leaders) - 1)
 
             yield leader, partition
 
@@ -90,7 +101,7 @@ class TestGenerator:
     def combine_scenarios_with_rounds(self, cases, limit: int):
 
         # select random combinations of leader, round and partition
-        return random_combination(combinations(cases, r=self.rounds), r=limit)
+        return combinations(cases, r=self.rounds)
 
     @staticmethod
     def empty_list():
@@ -109,7 +120,9 @@ class TestGenerator:
         # select two nodes within random partition and drop the messages among them
         li = random.sample(range(0, len(partition) - 1), 2)
 
-        return [partition[idx][li[0]], partition[idx][li[1]]]
+        message = ['Proposal', 'Vote', 'Timeout']
+
+        return [message[random.randint(0, len(message) - 1)],partition[idx][li[0]], partition[idx][li[1]]]
 
     def get_json_dump(self, testcases):
 
@@ -172,7 +185,7 @@ class TestGenerator:
 
     def write_to_file(self, json_dump, file_name):
 
-        with open(file_name, 'a') as file:
+        with open('../testcases/' + file_name, 'a') as file:
             file.write(json_dump)
 
         print("Writing Done, Thank You")
@@ -180,7 +193,7 @@ class TestGenerator:
     def run(self, offline: bool):
 
         # make partitions make_partitions(limit, number_of_partitions)
-        partitions = self.make_partitions(4, 3)
+        partitions = self.make_partitions()
 
         # Generate leader partition pairs randomly
         if self.randomness:
@@ -217,12 +230,22 @@ class TestGenerator:
             return json_dump
 
         # Write to file so that executor reads it from there
-        self.write_to_file(json_dump, 'testcase_1.json')
+        self.write_to_file(json_dump, self.output_file)
 
 
 if __name__ == '__main__':
 
-    gen = TestGenerator([0, 1, 2, 3, 4, 5, 6], 2, None)
+    config = {
+        'nvalidators': "7",
+        'nfaulty': "2",
+        'rounds': "10",
+        'limit_test_cases': "20",
+        'randomness': 'True',
+        'partitions': 3,
+        'output_file_name': 'testcase_1.json'
+    }
+
+    gen = TestGenerator(config)
 
     gen.run(True)
 

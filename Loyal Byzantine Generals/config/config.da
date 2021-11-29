@@ -2,21 +2,6 @@ from object_types import FailType, Failure, FailureConfig, MsgType
 
 configs = [
     {
-        'nvalidators': 3,
-        'nfaulty': 0,
-        'nclients': 3,
-        'nclientops': 2,
-        'sleeptime': 1,
-        'clienttimeout': 10,
-        'delta': 2,
-        'window_size': 5,
-        'exclude_size': 0,
-        'failure_config': FailureConfig(
-            failures=[],
-            seed=637713655
-        )
-    },
-    {
         'nvalidators': 4,
         'nfaulty': 1,
         'nclients': 5,
@@ -32,7 +17,32 @@ configs = [
                         round=3, prob=1, fail_type=FailType.MsgLoss, val=None, attr=None),
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_1.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
+    },
+    {
+        'nvalidators': 3,
+        'nfaulty': 0,
+        'nclients': 3,
+        'nclientops': 2,
+        'sleeptime': 1,
+        'clienttimeout': 10,
+        'delta': 2,
+        'window_size': 5,
+        'exclude_size': 0,
+        'failure_config': FailureConfig(
+            failures=[],
+            seed=637713655
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_2.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -50,7 +60,12 @@ configs = [
                         round=4, prob=1, fail_type=FailType.MsgLoss, val=None, attr=None),
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_3.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -70,7 +85,12 @@ configs = [
                         round=5, prob=1, fail_type=FailType.Delay, val=25, attr=None)
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_4.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -88,7 +108,12 @@ configs = [
                         round=8, prob=1, fail_type=FailType.SetAttr, val=2, attr='current_round')
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_5.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 7,
@@ -103,7 +128,12 @@ configs = [
         'failure_config': FailureConfig(
             failures=[],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_6.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 7,
@@ -131,7 +161,12 @@ configs = [
                         round=10, prob=1, fail_type=FailType.MsgLoss, val=None, attr=None)
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_7.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 7,
@@ -151,7 +186,12 @@ configs = [
                         round=2, prob=0.25, fail_type=FailType.MsgLoss, val=None, attr=None)
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_8.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -171,7 +211,12 @@ configs = [
                         round=4, prob=1, fail_type=FailType.MsgLoss, val=None, attr=None)
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_9.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 7,
@@ -193,7 +238,12 @@ configs = [
                         round=4, prob=1, fail_type=FailType.Delay, val=30, attr=None)
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_10.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -213,7 +263,12 @@ configs = [
                         round=4, prob=1, fail_type=FailType.Delay, val=0, attr=None)
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_11.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -233,7 +288,12 @@ configs = [
                         round=4, prob=1, fail_type=FailType.MsgLoss, val=None, attr=None)
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_12.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -251,7 +311,12 @@ configs = [
                         round=1, prob=1, fail_type=FailType.SetAttr, val=4, attr='current_round')
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_13.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -271,7 +336,12 @@ configs = [
                         round=5, prob=1, fail_type=FailType.MsgLoss, val=None, attr=None),
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_14.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
     {
         'nvalidators': 4,
@@ -291,7 +361,12 @@ configs = [
                         round=4, prob=1, fail_type=FailType.Delay, val=30, attr=None),
             ],
             seed=637713655
-        )
+        ),
+        'limit_test_cases': 10,
+        'output_file_name': 'testcase_15.json',
+        'randomness': "True",
+        'rounds': 2,
+        'partitions': 3
     },
 #     {
 #         'nvalidators': 7,

@@ -18,6 +18,13 @@ class Driver(process):
             limit_test_cases = data['limit_test_cases']
             output_file_name = data['output_file_name']
 
+            nodes = [i for i in range(num_nodes)]
+
+            gen = generator.TestGenerator(nodes, rounds, limit_test_cases)
+
+            # generates testcases
+            gen.run(True)
+
 
 
 
