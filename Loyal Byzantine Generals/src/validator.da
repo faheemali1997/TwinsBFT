@@ -16,7 +16,7 @@ from network_hub import NetworkHub
 
 class Validator (process):
 
-    def setup(config, config_id: int, validator_id: int, replicas: list, clients: list, private_key, public_keys_validators, public_keys_clients):
+    def setup(config, config_id: int, validator_id: int, replicas: list, clients: list, private_key, public_keys_validators, public_keys_clients, test_case, validators_map):
 
         LOGGER.replicas = replicas
         LOGGER.process_id = "validator_" + str(validator_id)
@@ -53,7 +53,8 @@ class Validator (process):
                               config['failure_config'].seed)
 
         random.seed(config['failure_config'].seed)
-        self.networkhub = NetworkHub(0,0,0,0,0)
+        # Pass test case
+        self.networkhub = NetworkHub(test_case, validators_map)
 
     # For fault injection
     def setattr(attr, value):

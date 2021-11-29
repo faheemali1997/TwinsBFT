@@ -1,0 +1,31 @@
+import sys
+import json
+from generator import generator
+
+class Driver(process):
+
+    def setup():
+        pass
+
+    def run():
+
+        with open('./config.json') as f:
+            data = json.load(f)
+
+            num_nodes = data['num_nodes']
+            byzentine_nodes = data['byzentine_nodes']
+            rounds = data['rounds']
+            limit_test_cases = data['limit_test_cases']
+            output_file_name = data['output_file_name']
+
+
+
+
+def main():
+
+    driver = new(Driver)
+
+    setup(driver, ())
+
+    start(driver)
+

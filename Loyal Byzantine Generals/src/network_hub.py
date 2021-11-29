@@ -22,19 +22,20 @@ sys.path.append('../../generator/testcase_1.json')
 
 
 def get_test_case_scenarios():
-    f = open('../../generator/testcase_1.json')
-    data = json.load(f)
-    return data['test_case_scenarios'][0]
+    with open('../../generator/testcase_1.json') as f:
+        data = json.load(f)
+        return data['test_case_scenarios'][0]
 
 
 class NetworkHub:
 
-    def __init__(self, number_of_nodes, number_of_twins, test_case_scenario, twins, process_ids):
-        self.number_of_nodes = number_of_nodes
-        self.number_of_twins = number_of_twins
-        self.test_case_scenario = test_case_scenario
-        self.twins = twins
-        self.process_ids = process_ids
+    def __init__(self, test_case, validators_map: dict):
+
+        self.number_of_nodes = int(test_case['number_of_nodes'])
+        self.number_of_twins = int(test_case['number_of_twins'])
+        self.test_case_scenario = test_case['test_case_scenarios']
+        self.twins = test_case['twins']
+        self.process_ids = validators_map
         self.blocked = {}
 
     def get_node_id(self, process_id):
@@ -49,6 +50,7 @@ class NetworkHub:
         return self.test_case_scenario[0]['partitions'][str(round_no)]
 
     def is_twins(self, node_id):
+        return node_id in self.twins
 
     def should_send_proposal_msg(self, proposal_msg, p):
         from_node_id = self.get_node_id(p)
@@ -62,7 +64,6 @@ class NetworkHub:
         # and also check the intra partition message drop scenario
         return any(dest_node_id in p and from_node_id in p for p in partitions)
 
-    #
     def should_send_vote_msg(self, vote_msg, p):
 
         from_node_id = self.get_node_id(p)
@@ -93,7 +94,7 @@ class NetworkHub:
         # Checks if the sender and receiver are in the same partition.
         should_send = any(dest_node_id in p and from_node_id in p for p in partitions)
 
-        if (from_node_id,dest_node_id) in self.blocked:
+        if (from_node_id, dest_node_id) in self.blocked:
             blocked_once = self.blocked[(from_node_id, dest_node_id)] == 1
         else:
             blocked_once = False
@@ -115,35 +116,36 @@ class NetworkHub:
             return False
 
 
-# class ProposalMsg1:
-#     def __init__(self, round_no, dest):
-#         self.round_no = round_no
-#         self.dest = dest
+class ProposalMsg1:
+    def __init__(self, round_no, dest):
+        self.round_no = round_no
+        self.dest = dest
 
 
-# if __name__ == '__main__':
-#     f = open('../../generator/testcase_1.json')
-#
-#     # returns JSON object as
-#     # a dictionary
-#     data = json.load(f)
-#
-#     number_of_nodes = data['number_of_nodes']
-#     number_of_twins = data['number_of_twins']
-#     twins = data['twins']
-#
-#     test_case_scenario = data['test_case_scenarios'][0]
-#
-#     process_ids = {0: 'node0', 1: 'node1', 2: 'node2', 3: 'node3', 4: 'node4', 5: 'node5', 6: 'node6', 7: 'node7',
-#                    8: 'node8'}
-#
-#     network_hub = NetworkHub(number_of_nodes, number_of_twins, test_case_scenario, twins, process_ids)
-#
-#     proposal_msg = ProposalMsg1(
-#         1,
-#         'node6'
-#     )
-#
-#     print(network_hub.should_send_timeout_msg(proposal_msg, 'node0'))
-#     print(network_hub.should_send_timeout_msg(proposal_msg, 'node0'))
+if __name__ == '__main__':
+    with open('../../generator/testcase_1.json') as f:
+        # returns JSON object as
+        # a dictionary
+        data = json.load(f)
+
+        number_of_nodes = data['number_of_nodes']
+        number_of_twins = data['number_of_twins']
+        twins = data['twins']
+
+        test_case_scenario = data
+
+        process_ids = {0: 'node0', 1: 'node1', 2: 'node2', 3: 'node3', 4: 'node4', 5: 'node5', 6: 'node6', 7: 'node7',
+                       8: 'node8'}
+
+        network_hub = NetworkHub(test_case_scenario, process_ids)
+
+        proposal_msg = ProposalMsg1(
+            1,
+            'node6'
+        )
+
+        val = network_hub.should_send_proposal_msg(proposal_msg, 'node1')
+
+        print(network_hub.should_send_timeout_msg(proposal_msg, 'node0'))
+        print(network_hub.should_send_timeout_msg(proposal_msg, 'node0'))
 

@@ -4,11 +4,13 @@ import sys
 
 sys.path.append('../config')
 
+sys.path.append('../../')
+
 from client import Client
 from config import configs
 from cryptography import Cryptography
 from validator import ValidatorFI
-
+from generator import generator
 
 class RunDiemBFT(process):
 
@@ -76,13 +78,24 @@ def main():
     if os.path.exists('../ledgers/') and os.path.isdir('../ledgers/'):
         shutil.rmtree('../ledgers/')
 
+    dir = '../testcases/'
+    for f in os.listdir(dir):
+        os.remove(os.path.join(dir, f))
+
     config_id = 0
+
     for config in configs:
         if not is_config_valid(config):
             output("The provided config", config,
                    "is not valid. Skipping this config.")
             continue
-        p = new(RunDiemBFT)
-        setup(p, (config, config_id))
-        start(p)
+
+        gen = generator.TestGenerator(config)
+        gen.run(True)
+
+
+
+        #p = new(RunDiemBFT)
+        #setup(p, (config, config_id))
+        #start(p)
         config_id += 1
