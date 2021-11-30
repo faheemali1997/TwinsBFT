@@ -34,19 +34,27 @@
                   [
                      [
                         0,
-                        2,
-                        4
-                     ],
-                     [
                         1
                      ],
                      [
+                        2,
                         3
+                     ],
+                     [
+                        4
                      ]
                   ]
                ]
             },
-            "random_message_drops": {}
+            "random_message_drops": {
+               "2": [
+                  [
+                     "Timeout",
+                     3,
+                     2
+                  ]
+               ]
+            }
          }
       ]
    ],

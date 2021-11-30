@@ -86,7 +86,6 @@ class RunDiemBFT(process):
                         private_keys_validators[v], public_keys_validators, public_keys_clients,
                         self.test_case, self.twin_validator_mapping, self.test_case_scenario))
             else:
-                output('There', i, self.twins)
                 setup({v}, (config, config_id, i, validators_new_list, list(clients),
                         private_keys_validators[v], public_keys_validators, public_keys_clients,
                         self.test_case, self.twin_validator_mapping, self.test_case_scenario))
@@ -125,6 +124,12 @@ def main():
 
     config_id = 0
 
+    if os.path.exists('../logs/') and os.path.isdir('../logs/'):
+        shutil.rmtree('../logs/')
+
+    if os.path.exists('../ledgers/') and os.path.isdir('../ledgers/'):
+        shutil.rmtree('../ledgers/')
+
     for config in configs:
         if not is_config_valid(config):
             output("The provided config", config,
@@ -141,15 +146,9 @@ def main():
             test_case_scenarios = test_case['test_case_scenarios']
 
         for test_case_scenario in test_case_scenarios:
-            if os.path.exists('../logs/') and os.path.isdir('../logs/'):
-                shutil.rmtree('../logs/')
-
-            if os.path.exists('../ledgers/') and os.path.isdir('../ledgers/'):
-                shutil.rmtree('../ledgers/')
             p = new(RunDiemBFT)
             setup(p, (config,config_id, test_case['twins'], test_case, test_case_scenario[0]))
             start(p)
-            break
-        break
+
         config_id += 1
 

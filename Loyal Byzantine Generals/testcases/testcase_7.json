@@ -1,32 +1,36 @@
 {
-   "number_of_nodes": 4,
-   "number_of_twins": 1,
+   "number_of_nodes": 7,
+   "number_of_twins": 2,
    "test_case_scenarios": [
       [
          {
             "round_leaders": {
                "1": [
-                  0,
-                  4
+                  1,
+                  8
                ],
                "2": [
                   0,
-                  4
+                  7
                ]
             },
             "partitions": {
                "1": [
                   [
                      [
-                        0
-                     ],
-                     [
-                        1,
+                        0,
                         4
                      ],
                      [
+                        1,
                         2,
-                        3
+                        6
+                     ],
+                     [
+                        3,
+                        5,
+                        7,
+                        8
                      ]
                   ]
                ],
@@ -34,23 +38,36 @@
                   [
                      [
                         0,
+                        6
+                     ],
+                     [
+                        1,
                         2,
-                        4
+                        3,
+                        5,
+                        8
                      ],
                      [
-                        1
-                     ],
-                     [
-                        3
+                        4,
+                        7
                      ]
                   ]
                ]
             },
-            "random_message_drops": {}
+            "random_message_drops": {
+               "2": [
+                  [
+                     "Proposal",
+                     0,
+                     6
+                  ]
+               ]
+            }
          }
       ]
    ],
    "twins": {
-      "0": 4
+      "0": 7,
+      "1": 8
    }
 }
