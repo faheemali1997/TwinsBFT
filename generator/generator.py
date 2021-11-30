@@ -53,7 +53,7 @@ class TestGenerator:
     def get_twin(self, node):
 
         assert node in self.byzentine_nodes
-        return self.nodes[len(self.total_nodes) - 1 + node]
+        return self.nodes[len(self.total_nodes) + node]
 
     def make_partitions(self, limit: int = 4):
 
@@ -122,7 +122,7 @@ class TestGenerator:
 
         message = ['Proposal', 'Vote', 'Timeout']
 
-        return [message[random.randint(0, len(message) - 1)],partition[idx][li[0]], partition[idx][li[1]]]
+        return [message[random.randint(0, len(message) - 1)], partition[idx][li[0]], partition[idx][li[1]]]
 
     def get_json_dump(self, testcases):
 

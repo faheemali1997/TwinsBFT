@@ -17,135 +17,121 @@
 """
 import json
 import sys
+from collections import defaultdict
 
 sys.path.append('../../generator/testcase_1.json')
 
+# loop through array of partitions, partition[0] -> array of partitions
+def get_partition_per_round(test_case):
 
-def get_test_case_scenarios():
-    with open('../../generator/testcase_1.json') as f:
-        data = json.load(f)
-        return data['test_case_scenarios'][0]
+    ans = defaultdict(list)
+
+    for k, v in test_case['partitions'].items():
+
+        ans[k].append(v[0])
+
+    return ans
+
+# starightforward, round_leaders[k] -> array
+def get_round_leaders(test_case):
+
+    ans = defaultdict(list)
+
+    for k, v in test_case['round_leaders'].items():
+
+        ans[k].append(v)
+
+    return ans
+
+
+def get_random_message_drops(test_case):
+
+    ans = defaultdict(list)
+
+    for k, v in test_case['random_message_drops'].items():
+
+        if len(v) > 0:
+            ans[k].append(v[0])
+
+    return ans
 
 
 class NetworkHub:
 
-    def __init__(self, test_case, validators_map: dict):
+    def __init__(self, test_case, validators_map: dict, test_case_scenario):
 
         self.number_of_nodes = int(test_case['number_of_nodes'])
         self.number_of_twins = int(test_case['number_of_twins'])
-        self.test_case_scenario = test_case['test_case_scenarios']
         self.twins = test_case['twins']
         self.process_ids = validators_map
         self.blocked = {}
+        self.test_case_scenario = test_case_scenario
+        self.round_leaders = test_case_scenario['round_leaders']
+        self.partitions = test_case_scenario['partitions']
+        self.random_message_drops = test_case_scenario['random_message_drops']
+        self.partitions_per_round = get_partition_per_round(test_case_scenario)
+        self.round_leaders_per_round = get_round_leaders(test_case_scenario)
+        self.random_message_drops_per_round = get_random_message_drops(test_case_scenario)
 
-    def get_node_id(self, process_id):
-        key_list = list(self.process_ids.keys())
-        val_list = list(self.process_ids.values())
-        return key_list[val_list.index(process_id)]
+    def should_send_proposal_msg(self, p, d, round_no):
 
-    def get_process_id(self, node_id):
-        return self.process_ids[node_id]
+        partitions = self.partitions_per_round[round_no]
 
-    def get_partition_for_round(self, round_no):
-        return self.test_case_scenario[0]['partitions'][str(round_no)]
+        message_drop = self.random_message_drops_per_round[round_no]
 
-    def is_twins(self, node_id):
-        return node_id in self.twins
-
-    def should_send_proposal_msg(self, proposal_msg, p):
-        from_node_id = self.get_node_id(p)
-        dest_node_id = self.get_node_id(proposal_msg.dest)
-        round_no = proposal_msg.round_no
-        # Get the partitions for the specific round. As mentioned in the paper, nodes have their own view of
-        # which round they are in and this is included in the message that is sent.
-        partitions = self.get_partition_for_round(round_no)[0]
-
-        # Checks if the sender and receiver are in the same partition
-        # and also check the intra partition message drop scenario
-        return any(dest_node_id in p and from_node_id in p for p in partitions)
-
-    def should_send_vote_msg(self, vote_msg, p):
-
-        from_node_id = self.get_node_id(p)
-
-        dest_node_id = self.get_node_id(vote_msg.dest)
-
-        round_no = vote_msg.round_no
-
-        # Get the partitions for the specific round. As mentioned in the paper, nodes have their own view of
-        # which round they are in and this is included in the message that is sent.
-        partitions = self.get_partition_for_round(round_no)[0]
-
-        # Checks if the sender and receiver are in the same partition.
-        return any(dest_node_id in p and from_node_id in p for p in partitions)
-
-    def should_send_timeout_msg(self, timeout_msg, p):
-
-        from_node_id = self.get_node_id(p)
-
-        dest_node_id = self.get_node_id(timeout_msg.dest)
-
-        round_no = timeout_msg.round_no
-
-        # Get the partitions for the specific round. As mentioned in the paper, nodes have their own view of
-        # which round they are in and this is included in the message that is sent.
-        partitions = self.get_partition_for_round(round_no)[0]
-
-        # Checks if the sender and receiver are in the same partition.
-        should_send = any(dest_node_id in p and from_node_id in p for p in partitions)
-
-        if (from_node_id, dest_node_id) in self.blocked:
-            blocked_once = self.blocked[(from_node_id, dest_node_id)] == 1
-        else:
-            blocked_once = False
-
-        if should_send and blocked_once:
-
-            self.blocked[(from_node_id, dest_node_id)] = 0
-
-            return True
-
-        elif should_send and not blocked_once:
-
-            self.blocked[(from_node_id, dest_node_id)] = 1
-
+        if message_drop and 'Proposal' in message_drop and p in message_drop and d in message_drop:
             return False
 
-        else:
+        for partition in partitions:
 
+            if p in partition and d in partition:
+                return True
+
+        return False
+
+    def should_send_vote_msg(self, p, d, round_no):
+
+        partitions = self.partitions_per_round[round_no]
+
+        message_drop = self.random_message_drops_per_round[round_no]
+
+        if message_drop and 'Vote' in message_drop and p in message_drop and d in message_drop:
             return False
 
+        for partition in partitions:
 
-class ProposalMsg1:
-    def __init__(self, round_no, dest):
-        self.round_no = round_no
-        self.dest = dest
+            if p in partition and d in partition:
+                return True
+
+        return False
+
+    def should_send_timeout_msg(self, p, d, round_no):
+
+        partitions = self.partitions_per_round[round_no]
+
+        message_drop = self.random_message_drops_per_round[round_no]
+
+        if message_drop and 'Timeout' in message_drop and p in message_drop and d in message_drop:
+            return False
+
+        for partition in partitions:
+
+            if p in partition and d in partition:
+                return True
+
+        return False
 
 
 if __name__ == '__main__':
-    with open('../../generator/testcase_1.json') as f:
-        # returns JSON object as
-        # a dictionary
+    with open('../testcases/testcase_1.json') as f:
+
         data = json.load(f)
 
-        number_of_nodes = data['number_of_nodes']
-        number_of_twins = data['number_of_twins']
-        twins = data['twins']
+        test_case_scenarios = data['test_case_scenarios']
 
-        test_case_scenario = data
+        for test in test_case_scenarios:
+            nh = NetworkHub(data, dict(), test[0])
+            val = nh.should_send_proposal_msg(0, 4, 1)
+            print(val)
 
-        process_ids = {0: 'node0', 1: 'node1', 2: 'node2', 3: 'node3', 4: 'node4', 5: 'node5', 6: 'node6', 7: 'node7',
-                       8: 'node8'}
-
-        network_hub = NetworkHub(test_case_scenario, process_ids)
-
-        proposal_msg = ProposalMsg1(
-            1,
-            'node6'
-        )
-
-        val = network_hub.should_send_proposal_msg(proposal_msg, 'node1')
-
-        print(network_hub.should_send_timeout_msg(proposal_msg, 'node0'))
-        print(network_hub.should_send_timeout_msg(proposal_msg, 'node0'))
 

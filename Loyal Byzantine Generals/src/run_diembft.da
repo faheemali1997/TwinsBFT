@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import json
 
 sys.path.append('../config')
 
@@ -12,12 +13,33 @@ from cryptography import Cryptography
 from validator import ValidatorFI
 from generator import generator
 
+def get_twins(twins):
+
+    ans = dict()
+
+    if not twins:
+        return ans
+
+    for k,v in twins.items():
+        ans[int(k)] = int(v)
+        ans[int(v)] = int(k)
+
+    return ans
+
+
 class RunDiemBFT(process):
 
-    def setup(config, config_id):
+    def setup(config, config_id, twins,test_case, test_case_scenario):
         self.nvalidators = int(config['nvalidators'])
         self.nclients = int(config['nclients'])
         self.nfaulty = int(config['nfaulty'])
+        # Virtual Index Twin Mapping
+        self.twins = get_twins(twins)
+        self.total_nodes = self.nvalidators + self.nfaulty
+        # DistAlgo Twin Mapping
+        self.twin_validator_mapping = dict()
+        self.test_case = test_case
+        self.test_case_scenario = test_case_scenario
 
     def run():
 
@@ -29,10 +51,21 @@ class RunDiemBFT(process):
         os.makedirs('../logs/config' + str(config_id))
         os.makedirs('../ledgers/config' + str(config_id))
 
-        validators = new(ValidatorFI, num=nvalidators)
+        validators = new(ValidatorFI, num=total_nodes)
         clients = new(Client, num=nclients)
 
+        validator_list = list(validators)
+
+        for k,v in self.twins.items():
+            self.twin_validator_mapping[validator_list[int(k)]] = validator_list[int(v)]
+            self.twin_validator_mapping[validator_list[int(v)]] = validator_list[int(k)]
+
         for v in validators:
+            v_twin = self.twin_validator_mapping.get(v,None)
+            if v_twin is not None and v_twin in private_keys_validators:
+                private_keys_validators[v] = private_keys_validators[v_twin]
+                public_keys_validators[v] = public_keys_validators[v_twin]
+                continue
             private_key, public_key = Cryptography.generate_key()
             private_keys_validators[v] = private_key
             public_keys_validators[v] = public_key
@@ -42,12 +75,26 @@ class RunDiemBFT(process):
             private_keys_clients[c] = private_key
             public_keys_clients[c] = public_key
 
+        validators_new_list = list(validators)[::]
+
+        if (self.nfaulty) > 0:
+            validators_new_list = validators_new_list[:-self.nfaulty]
+
         for i, v in enumerate(validators):
-            setup({v}, (config, config_id, i, list(validators), list(clients),
-                        private_keys_validators[v], public_keys_validators, public_keys_clients))
+            if i in self.twins:
+                setup({v}, (config, config_id, min(i, self.twins[i]), validators_new_list, list(clients),
+                        private_keys_validators[v], public_keys_validators, public_keys_clients,
+                        self.test_case, self.twin_validator_mapping, self.test_case_scenario))
+            else:
+                output('There', i, self.twins)
+                setup({v}, (config, config_id, i, validators_new_list, list(clients),
+                        private_keys_validators[v], public_keys_validators, public_keys_clients,
+                        self.test_case, self.twin_validator_mapping, self.test_case_scenario))
+
+            output(i, v)
 
         for i, c in enumerate(clients):
-            setup({c}, (config, config_id, i, list(validators),
+            setup({c}, (config, config_id, i,validators_new_list,
                         private_keys_clients[c], public_keys_validators))
 
         start(validators)
@@ -72,12 +119,6 @@ def is_config_valid(config):
 
 def main():
 
-    if os.path.exists('../logs/') and os.path.isdir('../logs/'):
-        shutil.rmtree('../logs/')
-
-    if os.path.exists('../ledgers/') and os.path.isdir('../ledgers/'):
-        shutil.rmtree('../ledgers/')
-
     dir = '../testcases/'
     for f in os.listdir(dir):
         os.remove(os.path.join(dir, f))
@@ -90,12 +131,25 @@ def main():
                    "is not valid. Skipping this config.")
             continue
 
+        output_file = config['output_file_name']
+
         gen = generator.TestGenerator(config)
         gen.run(True)
 
+        with open('../testcases/'+output_file) as file:
+            test_case = json.load(file)
+            test_case_scenarios = test_case['test_case_scenarios']
 
+        for test_case_scenario in test_case_scenarios:
+            if os.path.exists('../logs/') and os.path.isdir('../logs/'):
+                shutil.rmtree('../logs/')
 
-        #p = new(RunDiemBFT)
-        #setup(p, (config, config_id))
-        #start(p)
+            if os.path.exists('../ledgers/') and os.path.isdir('../ledgers/'):
+                shutil.rmtree('../ledgers/')
+            p = new(RunDiemBFT)
+            setup(p, (config,config_id, test_case['twins'], test_case, test_case_scenario[0]))
+            start(p)
+            break
+        break
         config_id += 1
+
