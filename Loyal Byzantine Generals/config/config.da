@@ -8,7 +8,7 @@ configs = [
         'nclientops': 5,
         'sleeptime': 1,
         'clienttimeout': 10,
-        'delta': 5,
+        'delta': 10,
         'window_size': 5,
         'exclude_size': 1,
         'failure_config': FailureConfig(
@@ -31,7 +31,7 @@ configs = [
         'nclientops': 2,
         'sleeptime': 1,
         'clienttimeout': 10,
-        'delta': 2,
+        'delta': 5,
         'window_size': 5,
         'exclude_size': 0,
         'failure_config': FailureConfig(

@@ -20,6 +20,7 @@
 import json
 import sys
 from collections import defaultdict
+import traceback
 
 sys.path.append('../../generator/testcase_1.json')
 
@@ -30,7 +31,7 @@ class NetworkHub(process):
         self.number_of_nodes = int(test_case['number_of_nodes'])
         self.number_of_twins = int(test_case['number_of_twins'])
         self.twins = test_case['twins']
-        self.process_ids = validators_map
+        self.twins_process_ids = validators_map
         self.blocked = {}
         self.test_case_scenario = test_case_scenario
         self.round_leaders = test_case_scenario['round_leaders']
@@ -50,16 +51,23 @@ class NetworkHub(process):
 
     def receive(msg=('Proposal', proposal_msg, dest), from_=p):
 
-        #List of distalgo process id for destinations
-        destinations = dest
+        try:
 
-        #round number
-        round_no = proposal_msg.block.round
+            #List of distalgo process id for destinations
+            destinations = dest
 
-        for d in destinations:
+            #round number
+            round_no = proposal_msg.block.round
 
-            output("SENDING")
-            send(('Proposal', proposal_msg, p), to=d)
+            for d in destinations:
+
+                if self.should_send_proposal_msg(p, d, round_no):
+                    output('Sending, successfully')
+                    send(('Proposal', proposal_msg, p), to=d)
+
+        except Exception:
+            print(traceback.format_exc())
+                
 
     def receive(msg=('Vote', vote_msg), from_=p):
 
@@ -101,8 +109,16 @@ class NetworkHub(process):
 
         message_drop = self.random_message_drops_per_round[str(round_no)]
 
+        if message_drop:
+            message_drop = message_drop[0]
+
+        # Intra partition message drop based on randomness and deterministic
         if message_drop and 'Proposal' in message_drop and virtual_p in message_drop and virtual_d in message_drop:
+            output('Hey, I am dropping this message')
             return False
+
+        if len(partitions) == 0:
+            return True
 
         for partition in partitions[0]:
 
@@ -120,7 +136,7 @@ class NetworkHub(process):
         partitions = self.partitions_per_round[str(round_no)]
 
         message_drop = self.random_message_drops_per_round[str(round_no)]
-
+        
         if message_drop and 'Vote' in message_drop and virtual_p in message_drop and virtual_d in message_drop:
             return False
 
