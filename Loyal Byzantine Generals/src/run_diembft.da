@@ -12,6 +12,7 @@ from config import configs
 from cryptography import Cryptography
 from validator import ValidatorFI
 from generator import generator
+from network_hub import NetworkHub
 
 def get_twins(twins):
 
@@ -40,6 +41,7 @@ class RunDiemBFT(process):
         self.twin_validator_mapping = dict()
         self.test_case = test_case
         self.test_case_scenario = test_case_scenario
+        self.dist_algo_id_to_virtual_id_map = dict()
 
     def run():
 
@@ -51,10 +53,15 @@ class RunDiemBFT(process):
         os.makedirs('../logs/config' + str(config_id))
         os.makedirs('../ledgers/config' + str(config_id))
 
+        network_hub = new(NetworkHub, num=1)
         validators = new(ValidatorFI, num=total_nodes)
         clients = new(Client, num=nclients)
 
         validator_list = list(validators)
+
+        # This will create a map of distalgo process ids vs virtual indexes
+        for i, v in enumerate(list(validators)):
+            self.dist_algo_id_to_virtual_id_map[v] = i
 
         for k,v in self.twins.items():
             self.twin_validator_mapping[validator_list[int(k)]] = validator_list[int(v)]
@@ -83,12 +90,10 @@ class RunDiemBFT(process):
         for i, v in enumerate(validators):
             if i in self.twins:
                 setup({v}, (config, config_id, min(i, self.twins[i]), validators_new_list, list(clients),
-                        private_keys_validators[v], public_keys_validators, public_keys_clients,
-                        self.test_case, self.twin_validator_mapping, self.test_case_scenario))
+                        private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub))
             else:
                 setup({v}, (config, config_id, i, validators_new_list, list(clients),
-                        private_keys_validators[v], public_keys_validators, public_keys_clients,
-                        self.test_case, self.twin_validator_mapping, self.test_case_scenario))
+                        private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub))
 
             output(i, v)
 
@@ -96,6 +101,9 @@ class RunDiemBFT(process):
             setup({c}, (config, config_id, i,validators_new_list,
                         private_keys_clients[c], public_keys_validators))
 
+        setup(network_hub, (self.test_case, self.twin_validator_mapping, self.test_case_scenario, self.dist_algo_id_to_virtual_id_map))
+
+        start(network_hub)
         start(validators)
         start(clients)
 

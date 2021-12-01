@@ -21,9 +21,9 @@ from collections import defaultdict
 
 sys.path.append('../../generator/testcase_1.json')
 
+
 # loop through array of partitions, partition[0] -> array of partitions
 def get_partition_per_round(test_case):
-
     ans = defaultdict(list)
 
     for k, v in test_case['partitions'].items():
@@ -32,20 +32,18 @@ def get_partition_per_round(test_case):
 
     return ans
 
+
 # starightforward, round_leaders[k] -> array
 def get_round_leaders(test_case):
-
     ans = defaultdict(list)
 
     for k, v in test_case['round_leaders'].items():
-
         ans[k].append(v)
 
     return ans
 
 
 def get_random_message_drops(test_case):
-
     ans = defaultdict(list)
 
     for k, v in test_case['random_message_drops'].items():
@@ -75,14 +73,14 @@ class NetworkHub:
 
     def should_send_proposal_msg(self, p, d, round_no):
 
-        partitions = self.partitions_per_round[round_no]
+        partitions = self.partitions_per_round[str(round_no)]
 
-        message_drop = self.random_message_drops_per_round[round_no]
+        message_drop = self.random_message_drops_per_round[str(round_no)]
 
         if message_drop and 'Proposal' in message_drop and p in message_drop and d in message_drop:
             return False
 
-        for partition in partitions:
+        for partition in partitions[0]:
 
             if p in partition and d in partition:
                 return True
@@ -91,14 +89,14 @@ class NetworkHub:
 
     def should_send_vote_msg(self, p, d, round_no):
 
-        partitions = self.partitions_per_round[round_no]
+        partitions = self.partitions_per_round[str(round_no)]
 
-        message_drop = self.random_message_drops_per_round[round_no]
+        message_drop = self.random_message_drops_per_round[str(round_no)]
 
         if message_drop and 'Vote' in message_drop and p in message_drop and d in message_drop:
             return False
 
-        for partition in partitions:
+        for partition in partitions[0]:
 
             if p in partition and d in partition:
                 return True
@@ -107,14 +105,14 @@ class NetworkHub:
 
     def should_send_timeout_msg(self, p, d, round_no):
 
-        partitions = self.partitions_per_round[round_no]
+        partitions = self.partitions_per_round[str(round_no)]
 
-        message_drop = self.random_message_drops_per_round[round_no]
+        message_drop = self.random_message_drops_per_round[str(round_no)]
 
         if message_drop and 'Timeout' in message_drop and p in message_drop and d in message_drop:
             return False
 
-        for partition in partitions:
+        for partition in partitions[0]:
 
             if p in partition and d in partition:
                 return True
@@ -133,5 +131,3 @@ if __name__ == '__main__':
             nh = NetworkHub(data, dict(), test[0])
             val = nh.should_send_proposal_msg(0, 4, 1)
             print(val)
-
-

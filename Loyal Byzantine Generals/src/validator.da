@@ -11,12 +11,10 @@ from mem_pool import MemPool
 from object_types import FailType, MsgType, ProposalMsg
 from pacemaker import Pacemaker
 from safety import Safety
-from network_hub import NetworkHub
-
 
 class Validator (process):
 
-    def setup(config, config_id: int, validator_id: int, replicas: list, clients: list, private_key, public_keys_validators, public_keys_clients, test_case, validators_map, test_case_scenario):
+    def setup(config, config_id: int, validator_id: int, replicas: list, clients: list, private_key, public_keys_validators, public_keys_clients, network_hub):
 
         LOGGER.replicas = replicas
         LOGGER.process_id = "validator_" + str(validator_id)
@@ -54,7 +52,9 @@ class Validator (process):
 
         random.seed(config['failure_config'].seed)
         # Pass test case
-        self.networkhub = NetworkHub(test_case, validators_map, test_case_scenario)
+
+        self.network_hub = network_hub
+
     # For fault injection
     def setattr(attr, value):
         if attr == 'current_round':
@@ -149,27 +149,27 @@ class Validator (process):
                 block=block,
                 last_round_tc=last_tc,
                 high_commit_qc=self.blocktree.high_commit_qc,
-                validator=validator_id
+                validator=validator_id,
             )
-
-            send(('Proposal', proposal_msg), to=self.replicas)
+            output('Sending')
+            send(('Proposal', proposal_msg, self.replicas), to=network_hub)
             LOGGER.log_event("Sent", "Proposal",proposal_msg, self.replicas)
 
         LOGGER.log("Validator: process_new_round_event ends", None)
 
     '''Procedure process proposal msg(P)'''
-    def receive(msg=('Proposal', proposal_msg), from_=p):
-        LOGGER.log_event("Received", "Proposal", proposal_msg, p)
+    def receive(msg=('Proposal', proposal_msg, sender), from_=p):
+        LOGGER.log_event("Received", "Proposal", proposal_msg, sender)
 
         signature_verified = Cryptography.get_verified_message(
-            proposal_msg.signature, public_keys_validators[p])
+            proposal_msg.signature, public_keys_validators[sender])
 
         if signature_verified is not None:
             LOGGER.log_action("Verified ProposalMsg signature", True)
 
             self.should_start_new_round = False
 
-            if proposal_msg.block.qc is not None and p != replicas[validator_id]:
+            if proposal_msg.block.qc is not None and sender != replicas[validator_id]:
                 '''process certificate qc(P.block.qc)'''
                 process_certificate_qc(proposal_msg.block.qc)
 
@@ -190,7 +190,7 @@ class Validator (process):
                 LOGGER.log("ROUND PROPOSAL EARLY EXIT", proposal_msg.block.round, round, replicas[proposal_msg.sender], leader)
                 return
 
-            if p != replicas[validator_id]:
+            if sender != replicas[validator_id]:
                 # Validate (and remove) the transactions in current mempool with the received txns
                 if not self.mempool.validate_and_remove_transactions(proposal_msg.block.payload):
                     LOGGER.log(
