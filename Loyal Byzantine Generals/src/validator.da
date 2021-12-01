@@ -12,9 +12,21 @@ from object_types import FailType, MsgType, ProposalMsg
 from pacemaker import Pacemaker
 from safety import Safety
 
+
+def get_round_leaders(round_leaders):
+
+    ans = dict()
+
+    for k,v in round_leaders.items():
+
+        ans[int(k)] = list(map(int, v))
+
+    return ans
+
 class Validator (process):
 
-    def setup(config, config_id: int, validator_id: int, replicas: list, clients: list, private_key, public_keys_validators, public_keys_clients, network_hub):
+    def setup(config, config_id: int, validator_id: int, replicas: list, clients: list, private_key, public_keys_validators, public_keys_clients, network_hub
+    , test_case_scenario):
 
         LOGGER.replicas = replicas
         LOGGER.process_id = "validator_" + str(validator_id)
@@ -29,6 +41,8 @@ class Validator (process):
         self.recently_committed_block_ids = list()
         self.should_start_new_round = True
 
+        self.round_leaders = get_round_leaders(test_case_scenario['round_leaders'])
+
         self.ledger = Ledger(
             config_id, validator_id, self.id_block, self.recently_committed_block_ids, self.request_cache)
         self.blocktree = BlockTree(
@@ -39,7 +53,8 @@ class Validator (process):
             validator_id, replicas, self.blocktree, self.safety, config['nfaulty'], config['delta'], send_timeout_msg)
         self.mempool = MemPool(validator_id)
         self.leader_election = LeaderElection(
-            validator_id, replicas, self.ledger, self.pacemaker, config['window_size'], config['exclude_size'])
+            validator_id, replicas, self.ledger, self.pacemaker, config['window_size'], config['exclude_size'],
+            self.round_leaders)
 
         Cryptography.private_key = self.private_key
         Cryptography.replicas = self.replicas
@@ -152,7 +167,7 @@ class Validator (process):
                 validator=validator_id,
             )
             output('Sending')
-            send(('Proposal', proposal_msg, self.replicas), to=network_hub)
+            send(('Proposal', proposal_msg, self.replicas), to=self.network_hub)
             LOGGER.log_event("Sent", "Proposal",proposal_msg, self.replicas)
 
         LOGGER.log("Validator: process_new_round_event ends", None)

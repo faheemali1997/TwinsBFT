@@ -90,12 +90,10 @@ class RunDiemBFT(process):
         for i, v in enumerate(validators):
             if i in self.twins:
                 setup({v}, (config, config_id, min(i, self.twins[i]), validators_new_list, list(clients),
-                        private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub))
+                        private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub, self.test_case_scenario))
             else:
                 setup({v}, (config, config_id, i, validators_new_list, list(clients),
-                        private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub))
-
-            output(i, v)
+                        private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub, self.test_case_scenario))
 
         for i, c in enumerate(clients):
             setup({c}, (config, config_id, i,validators_new_list,
