@@ -93,16 +93,19 @@ class NetworkHub(process):
 
     def receive(msg=('Timeout', timeout_msg, sender), from_=p):
 
-        #List of distalgo process id for destinations
-        destinations = sender
+        try:
 
-        #round number
-        round_no = timeout_msg.tmo_info.round
+            #List of distalgo process id for destinations
+            destinations = sender
 
-        for d in destinations:
+            #round number
+            round_no = timeout_msg.tmo_info.round
 
-            if should_send_timeout_msg(p,d,round_no):
-                send(('Timeout', timeout_msg), to=d)
+            send(('Timeout', timeout_msg, p), to=destinations)
+
+
+        except Exception:
+            print(traceback.format_exc())
 
     def should_send_proposal_msg(p, d, round_no):
 
@@ -175,6 +178,9 @@ class NetworkHub(process):
 
         if message_drop and 'Timeout' in message_drop and virtual_p in message_drop and virtual_d in message_drop:
             return False
+
+        if len(partitions) == 0:
+            return True
 
         for partition in partitions[0]:
 
