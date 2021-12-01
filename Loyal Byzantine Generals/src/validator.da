@@ -82,9 +82,6 @@ class Validator (process):
     # Broadcast the timeout message
     def send_timeout_msg(timeout_msg):
         LOGGER.log('Validator: send_timeout_message', timeout_msg)
-
-
-
         send(('Timeout', timeout_msg), to=self.replicas)
         LOGGER.log_event('Sent', 'Timeout', timeout_msg, self.replicas)
 
@@ -166,7 +163,6 @@ class Validator (process):
                 high_commit_qc=self.blocktree.high_commit_qc,
                 validator=validator_id,
             )
-            output('Sending')
             send(('Proposal', proposal_msg, self.replicas), to=self.network_hub)
             LOGGER.log_event("Sent", "Proposal",proposal_msg, self.replicas)
 
@@ -226,23 +222,23 @@ class Validator (process):
                     send vote msg to LeaderElection.get leader(current round + 1)'''
             if vote_msg is not None:
                 next_leader = self.leader_election.get_leader(round + 1)
-                send(('Vote', vote_msg),
-                     to=next_leader)
+                send(('Vote', vote_msg,[next_leader]),
+                     to=self.network_hub)
                 LOGGER.log_event("Sent", "Vote", vote_msg, next_leader)
 
         else:
             LOGGER.log_action("Verified ProposalMsg signature", False)
 
     '''Procedure process vote msg(M)'''
-    def receive(msg=('Vote', vote_msg), from_=p):
-        LOGGER.log_event("Received", "Vote", vote_msg, p)
+    def receive(msg=('Vote', vote_msg, sender), from_=p):
+        LOGGER.log_event("Received", "Vote", vote_msg, sender)
+        LOGGER.log_event("Received Through Network Hub", "Vote", vote_msg, p)
 
         signature_verified = Cryptography.get_verified_message(
-            vote_msg.signature, public_keys_validators[p])
+            vote_msg.signature, public_keys_validators[sender])
 
         if signature_verified is not None:
             LOGGER.log_action("Verified VoteMsg signature", True)
-
             '''qc ← Block-Tree.process vote(M)'''
             qc = self.blocktree.process_vote(vote_msg)
             '''if qc != ⊥ then'''

@@ -64,29 +64,37 @@ class NetworkHub(process):
                 if self.should_send_proposal_msg(p, d, round_no):
                     output('Sending, successfully')
                     send(('Proposal', proposal_msg, p), to=d)
+                if p in self.twins_process_ids and self.should_send_proposal_msg(self.twins_process_ids[p],d,round_no):
+                    output('Sending, successfully from twin')
+                    send(('Proposal', proposal_msg, p), to=d)
 
         except Exception:
             print(traceback.format_exc())
-                
 
-    def receive(msg=('Vote', vote_msg), from_=p):
+    def receive(msg=('Vote', vote_msg, dest), from_=p):
+
+        try:
+
+            #List of distalgo process id for destinations
+            destinations = dest
+
+            #round number
+            round_no = vote_msg.vote_info.round
+
+            for d in destinations:
+
+                if should_send_vote_msg(p,d,round_no):
+                    send(('Vote', vote_msg,p), to=d)
+
+
+        except Exception:
+            print(traceback.format_exc())
+
+
+    def receive(msg=('Timeout', timeout_msg, sender), from_=p):
 
         #List of distalgo process id for destinations
-        destinations = vote_msg.dest
-
-        #round number
-        round_no = vote_msg.vote_info.round
-
-        for d in destinations:
-
-            if should_send_vote_msg(p,d,round_no):
-
-                send(('Vote', vote_msg), to=d)
-
-    def receive(msg=('Timeout', timeout_msg), from_=p):
-
-        #List of distalgo process id for destinations
-        destinations = timeout_msg.dest
+        destinations = sender
 
         #round number
         round_no = timeout_msg.tmo_info.round
@@ -94,7 +102,6 @@ class NetworkHub(process):
         for d in destinations:
 
             if should_send_timeout_msg(p,d,round_no):
-
                 send(('Timeout', timeout_msg), to=d)
 
     def should_send_proposal_msg(p, d, round_no):
@@ -136,9 +143,15 @@ class NetworkHub(process):
         partitions = self.partitions_per_round[str(round_no)]
 
         message_drop = self.random_message_drops_per_round[str(round_no)]
-        
+
+        if message_drop:
+            message_drop = message_drop[0]
+
         if message_drop and 'Vote' in message_drop and virtual_p in message_drop and virtual_d in message_drop:
             return False
+
+        if len(partitions) == 0:
+            return True
 
         for partition in partitions[0]:
 
@@ -156,6 +169,9 @@ class NetworkHub(process):
         partitions = self.partitions_per_round[str(round_no)]
 
         message_drop = self.random_message_drops_per_round[str(round_no)]
+
+        if message_drop:
+            message_drop = message_drop[0]
 
         if message_drop and 'Timeout' in message_drop and virtual_p in message_drop and virtual_d in message_drop:
             return False
