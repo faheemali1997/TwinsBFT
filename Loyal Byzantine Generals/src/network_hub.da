@@ -54,12 +54,9 @@ class NetworkHub(process):
 
     # Network hub receives all the proposal messages and then decides whether to forward or not.
     # if should_send_proposal_msg(p,d,round_no):
-
     def run():
 
         await(self.done)
-
-        output('Exiting here')
 
     def check_safety():
         path = os.path.realpath('../') + '/ledgers' + '/' + 'config'+str(self.config_id)

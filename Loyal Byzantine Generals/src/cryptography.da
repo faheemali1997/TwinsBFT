@@ -29,6 +29,7 @@ class Cryptography:
     def get_verified_message(signed_message, public_key):
         try:
             bytes_data = public_key.verify(signed_message)
+            val = Cryptography.get_data_from_bytes(bytes_data)
             return Cryptography.get_data_from_bytes(bytes_data)
         except:
             return None
