@@ -8,6 +8,7 @@ from itertools import combinations
 from iteration_utilities import random_combination
 from os.path import join
 import os
+from copy import deepcopy
 
 
 class TestGenerator:
@@ -40,6 +41,7 @@ class TestGenerator:
         self.twins = self.generate_twins(self.byzentine_nodes)
         self.randomness = randomness
         self.output_file = config['output_file_name']
+        self.ideal = 'ideal' in config and config['ideal'] == 'True'
 
     def generate_twins(self, byzentine_nodes: list):
 
@@ -95,7 +97,6 @@ class TestGenerator:
         for partition in partitions:
 
             for leader in all_leaders:
-
                 yield leader, partition
 
     def combine_scenarios_with_rounds(self, cases, limit: int):
@@ -106,6 +107,15 @@ class TestGenerator:
     @staticmethod
     def empty_list():
         return []
+
+    def return_leader_partition_single(self, partitions, limit):
+
+        testcases = []
+
+        while limit > 0:
+            all_leaders = self.byzentine_nodes[::]
+            yield all_leaders[0], partitions[0]
+            limit -= 1
 
     @staticmethod
     def select_random_nodes_within_partition(partition: list):
@@ -118,7 +128,7 @@ class TestGenerator:
             return []
 
         # select two nodes within random partition and drop the messages among them
-        li = random.sample(range(0, len(partition) - 1), 2)
+        li = random.sample(range(0, len(partition[idx])), 2)
 
         message = ['Proposal', 'Vote', 'Timeout']
 
@@ -129,10 +139,10 @@ class TestGenerator:
         json_dump = []
 
         """
-        
+
         If we have only one node in round_leaders, it is non-byzentine
         else, it is byzentine.
-             
+
         """
 
         for testcase in testcases:
@@ -152,12 +162,12 @@ class TestGenerator:
 
                 round_partition = partition[1]
 
-                round_leaders[round_number+1].append(round_leader)
+                round_leaders[round_number + 1].append(round_leader)
 
                 if round_leader in self.byzentine_nodes:
-                    round_leaders[round_number+1].append(self.get_twin(round_leader))
+                    round_leaders[round_number + 1].append(self.get_twin(round_leader))
 
-                round_partitions[round_number+1].append(round_partition)
+                round_partitions[round_number + 1].append(round_partition)
 
                 message_drop = random.randint(0, 1)
 
@@ -170,7 +180,7 @@ class TestGenerator:
             json_dump.append([{
                 'round_leaders': round_leaders,
                 'partitions': round_partitions,
-                'random_message_drops': random_message_drops
+                'random_message_drops': ({} if self.ideal else random_message_drops)
             }])
 
         return dumps(
@@ -195,6 +205,9 @@ class TestGenerator:
         # make partitions make_partitions(limit, number_of_partitions)
         partitions = self.make_partitions()
 
+        # make partitions copy
+        partitions_clone = deepcopy(partitions)
+
         # Generate leader partition pairs randomly
         if self.randomness:
             scenarios = self.combine_leader_partition_random(partitions)
@@ -208,6 +221,10 @@ class TestGenerator:
 
         # Generate leader_partition_pairs with rounds
         testcases = self.combine_scenarios_with_rounds(scenarios, limit)
+
+        if self.ideal:
+            testcases = self.combine_scenarios_with_rounds(
+                self.return_leader_partition_single(partitions_clone, max(self.rounds, limit)), max(self.rounds, limit))
 
         # Create a new array for holding testcases
         testcases_new = []
@@ -239,15 +256,22 @@ if __name__ == '__main__':
         'nvalidators': "7",
         'nfaulty': "2",
         'rounds': "10",
-        'limit_test_cases': "20",
-        'randomness': 'True',
-        'partitions': 3,
-        'output_file_name': 'testcase_1.json'
+        'limit_test_cases': "5",
+        'randomness': 'False',
+        'partitions': 2,
+        'output_file_name': 'testcase_1.json',
+        'ideal': 'False'
     }
 
     gen = TestGenerator(config)
 
-    gen.run(True)
+    val = gen.run(False)
+
+
+
+
+
+
 
 
 

@@ -8,21 +8,21 @@ configs = [
         'nclientops': 5,
         'sleeptime': 1,
         'clienttimeout': 10,
-        'delta': 5,
+        'delta': 10,
         'window_size': 5,
         'exclude_size': 1,
         'failure_config': FailureConfig(
             failures=[
-                Failure(src='_', dest='leader', msg_type=MsgType.Vote,
-                        round=3, prob=1, fail_type=FailType.MsgLoss, val=None, attr=None),
+
             ],
             seed=637713655
         ),
         'limit_test_cases': 1,
         'output_file_name': 'testcase_1.json',
-        'randomness': "True",
-        'rounds': 2,
-        'partitions': 3
+        'randomness': "False",
+        'rounds': 10,
+        'partitions': 1,
+        "ideal": "True"
     },
     {
         'nvalidators': 3,
@@ -41,7 +41,7 @@ configs = [
         'limit_test_cases': 1,
         'output_file_name': 'testcase_2.json',
         'randomness': "True",
-        'rounds': 2,
+        'rounds': 10,
         'partitions': 3
     },
     {
@@ -64,7 +64,7 @@ configs = [
         'limit_test_cases': 1,
         'output_file_name': 'testcase_3.json',
         'randomness': "True",
-        'rounds': 2,
+        'rounds': 10,
         'partitions': 3
     },
     {
@@ -89,7 +89,7 @@ configs = [
         'limit_test_cases': 1,
         'output_file_name': 'testcase_4.json',
         'randomness': "True",
-        'rounds': 2,
+        'rounds': 10,
         'partitions': 3
     },
     {
@@ -131,8 +131,8 @@ configs = [
         ),
         'limit_test_cases': 1,
         'output_file_name': 'testcase_6.json',
-        'randomness': "True",
-        'rounds': 2,
+        'randomness': "False",
+        'rounds': 10,
         'partitions': 3
     },
     {
