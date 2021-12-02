@@ -26,7 +26,7 @@ sys.path.append('../../generator/testcase_1.json')
 
 class NetworkHub(process):
 
-    def setup(test_case, validators_map: dict, test_case_scenario, dist_algo_id_to_virtual_id_map):
+    def setup(validator_list,test_case, validators_map: dict, test_case_scenario, dist_algo_id_to_virtual_id_map):
 
         self.number_of_nodes = int(test_case['number_of_nodes'])
         self.number_of_twins = int(test_case['number_of_twins'])
@@ -41,13 +41,23 @@ class NetworkHub(process):
         self.round_leaders_per_round = get_round_leaders(test_case_scenario)
         self.random_message_drops_per_round = get_random_message_drops(test_case_scenario)
         self.dist_algo_id_to_virtual_id_map = dist_algo_id_to_virtual_id_map
+        self.validator_list = validator_list
+        self.done = False
 
     # Network hub receives all the proposal messages and then decides whether to forward or not.
     # if should_send_proposal_msg(p,d,round_no):
 
     def run():
 
-        await(False)
+        await(self.done)
+
+    def exit_if_valid(round_no):
+
+        if round_no > int(max(self.round_leaders_per_round.keys())):
+            # Check Safety and Liveness
+            send(('Done',), to=self.validator_list)
+            output('Network Hub is exiting as maximum rounds reached ', round_no)
+            self.done = True
 
     def receive(msg=('Proposal', proposal_msg, dest), from_=p):
 
@@ -58,6 +68,8 @@ class NetworkHub(process):
 
             #round number
             round_no = proposal_msg.block.round
+
+            exit_if_valid(round_no)
 
             for d in destinations:
 
@@ -84,6 +96,8 @@ class NetworkHub(process):
             #round number
             round_no = vote_msg.vote_info.round
 
+            exit_if_valid(round_no)
+
             for d in destinations:
 
                 if should_send_vote_msg(p,d,round_no):
@@ -102,6 +116,8 @@ class NetworkHub(process):
 
             #round number
             round_no = timeout_msg.tmo_info.round
+
+            exit_if_valid(round_no)
 
             send(('Timeout', timeout_msg, p), to=destinations)
 

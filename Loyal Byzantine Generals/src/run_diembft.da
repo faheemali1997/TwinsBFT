@@ -102,7 +102,7 @@ class RunDiemBFT(process):
                 setup({c}, (config, config_id, i,validators_new_list,
                             private_keys_clients[c], public_keys_validators))
 
-            setup(network_hub, (self.test_case, self.twin_validator_mapping, self.test_case_scenario, self.dist_algo_id_to_virtual_id_map))
+            setup(network_hub, (validator_list,self.test_case, self.twin_validator_mapping, self.test_case_scenario, self.dist_algo_id_to_virtual_id_map))
 
             start(network_hub)
             start(validators)
