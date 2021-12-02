@@ -30,7 +30,12 @@ class LeaderElection:
         self.max_round = get_max_round(self.round_leaders)
 
 
-    '''Function get leader(round)'''
+    '''Function get leader(round)
+
+       This is the updated Leader Election for Twins BFT Testing.
+
+    '''
+
     def get_leader(self, round):
 
         if round not in self.round_leaders:

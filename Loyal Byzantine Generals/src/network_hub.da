@@ -25,6 +25,7 @@ import hashlib
 import re
 import os
 
+from logger_util import LOGGER
 BUF_SIZE = 65536  # lets read stuff in 64kb chunks!
 
 sys.path.append('../../generator/testcase_1.json')
@@ -52,16 +53,25 @@ class NetworkHub(process):
         self.config_id = config_id
         self.clients = clients
 
+        #LOGGER.replicas = replicas
+        LOGGER.process_id = "network_hub"
+        LOGGER.clients = clients
+        LOGGER.filename = '../logs/config' + str(config_id) + '/' \
+            + LOGGER.process_id + ".log"
+
+        LOGGER.log_action("Initial configuration", config)
+
     # Network hub receives all the proposal messages and then decides whether to forward or not.
     # if should_send_proposal_msg(p,d,round_no):
 
     def run():
-
+        LOGGER.log_action("Running Network Hub", {})
         await(self.done)
 
         output('Exiting here')
 
     def check_safety():
+        LOGGER.log_action("Checking Safety: ", {})
         path = os.path.realpath('../') + '/ledgers' + '/' + 'config'+str(self.config_id)
         ledgers = os.listdir(path)
         ledger_hash = defaultdict(int)
@@ -92,6 +102,7 @@ class NetworkHub(process):
         return False
 
     def check_liveliness():
+        LOGGER.log_action("Checking Liveliness: ", {})
         path = os.path.realpath('../') + '/ledgers' + '/' + 'config'+str(self.config_id)
         ledgers = os.listdir(path)
 
@@ -129,7 +140,7 @@ class NetworkHub(process):
             self.done = True
 
     def receive(msg=('Proposal', proposal_msg, dest), from_=p):
-
+        LOGGER.log_action("Received Proposal Msg from: ", {self.dist_algo_id_to_virtual_id_map[p]})
         try:
 
             #List of distalgo process id for destinations
@@ -143,15 +154,22 @@ class NetworkHub(process):
             for d in destinations:
 
                 if self.should_send_proposal_msg(p, d, round_no):
+                    output('Sending, successfully')
                     send(('Proposal', proposal_msg, p), to=d)
+                    LOGGER.log_action("Sending Proposal Msg to: ", {self.dist_algo_id_to_virtual_id_map[d]})
+                else:
+                    output('Proposal Message Dropped')
+                    LOGGER.log_action("Proposal Message Dropped: ", {self.dist_algo_id_to_virtual_id_map[d]})
                 if p in self.twins_process_ids and self.should_send_proposal_msg(self.twins_process_ids[p],d,round_no):
+                    output('Sending, successfully from twin')
                     send(('Proposal', proposal_msg, p), to=d)
+                    LOGGER.log_action("Sending Proposal Msg from twin: ", {self.dist_algo_id_to_virtual_id_map[p]})
 
         except Exception:
             print(traceback.format_exc())
 
     def receive(msg=('Vote', vote_msg, dest), from_=p):
-
+        LOGGER.log_action("Received Vote Msg from: ", {self.dist_algo_id_to_virtual_id_map[p]})
         try:
 
             #List of distalgo process id for destinations
@@ -166,13 +184,17 @@ class NetworkHub(process):
 
                 if should_send_vote_msg(p,d,round_no):
                     send(('Vote', vote_msg,p), to=d)
+                    LOGGER.log_action("Vote Message Sent: ", {self.dist_algo_id_to_virtual_id_map[d]})
+                else:
+                    LOGGER.log_action("Vote Message Dropped: ", {self.dist_algo_id_to_virtual_id_map[d]})
+
 
         except Exception:
             print(traceback.format_exc())
 
 
     def receive(msg=('Timeout', timeout_msg, sender), from_=p):
-
+        LOGGER.log_action("Timeout Message Received: ", {self.dist_algo_id_to_virtual_id_map[p]})
         try:
 
             #List of distalgo process id for destinations
@@ -183,6 +205,7 @@ class NetworkHub(process):
 
             exit_if_valid(round_no)
 
+            LOGGER.log_action("Timeout Message Sent: ", {'Everyone'})
             send(('Timeout', timeout_msg, p), to=destinations)
 
         except Exception:
