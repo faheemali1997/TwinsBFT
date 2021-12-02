@@ -31,6 +31,16 @@ class BlockTree:
     def execute_and_insert(self, block):
         LOGGER.log('BlockTree: execute_and_insert', block)
 
+        if block.qc is None:
+            id = Cryptography.hash(self.validator_id, block.round,
+                                   block.payload)
+        else:
+            id = Cryptography.hash(self.validator_id, block.round,
+                                   block.payload, block.qc.vote_info.id, block.qc.signatures)
+
+        if id != block.id:
+            LOGGER.log('BlockTree: Block Not Valid', block)
+
         self.id_block[block.id] = block
         if block.qc is None:
             '''Ledger.speculate(b.qc.block id, b.id, b.payload)'''
