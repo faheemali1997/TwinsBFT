@@ -21,6 +21,7 @@ class Client(process):
         self.sleep_time = config['sleeptime']
         self.nops = config['nclientops']
         self.f = config['nfaulty']
+        self.early_exit = False
 
         Cryptography.private_key = self.private_key
 
@@ -47,10 +48,14 @@ class Client(process):
             send_request(request)
 
         # Wait until we have received valid (f+1) responses for all its requests
-        await(len(received_sufficient_responses) == nops)
+        await(len(received_sufficient_responses) == nops or early_exit)
 
         send(('Done',), to=parent())
         LOGGER.log_event("Sent", "Done", None, parent())
+
+    def receive(msg=('Done'), from_=network_hub):
+        output('Exiting Client')
+        self.early_exit = True
 
     def receive(msg=('Response', resp), from_=validator):
         LOGGER.log_event("Received", "Response", resp, validator)

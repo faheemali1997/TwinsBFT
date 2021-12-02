@@ -23,6 +23,7 @@ from collections import defaultdict
 import traceback
 import hashlib
 import re
+import os
 
 BUF_SIZE = 65536  # lets read stuff in 64kb chunks!
 
@@ -30,7 +31,7 @@ sys.path.append('../../generator/testcase_1.json')
 
 class NetworkHub(process):
 
-    def setup(config, config_id,validator_list,test_case, validators_map: dict, test_case_scenario, dist_algo_id_to_virtual_id_map):
+    def setup(config, config_id, clients,validator_list,test_case, validators_map: dict, test_case_scenario, dist_algo_id_to_virtual_id_map):
 
         self.number_of_nodes = int(test_case['number_of_nodes'])
         self.number_of_twins = int(test_case['number_of_twins'])
@@ -49,6 +50,7 @@ class NetworkHub(process):
         self.done = False
         self.config = config
         self.config_id = config_id
+        self.clients = clients
 
     # Network hub receives all the proposal messages and then decides whether to forward or not.
     # if should_send_proposal_msg(p,d,round_no):
@@ -57,51 +59,73 @@ class NetworkHub(process):
 
         await(self.done)
 
+        output('Exiting here')
+
     def check_safety():
-        path = os.path.realpath('../') + '/ledgers' + '/' + self.config_id
+        path = os.path.realpath('../') + '/ledgers' + '/' + 'config'+str(self.config_id)
         ledgers = os.listdir(path)
         ledger_hash = defaultdict(int)
+
+        # Find the file with min size and find the longest common prefix same
+
+        _min = ['', float('inf')]
+        ledger_list = []
         for ledger in ledgers:
-            ledger_path = path + '/' + '/' + ledger
-            with open(ledger_path, 'rb') as f:
-                md5 = hashlib.md5()
-                while True:
-                    data = f.read(BUF_SIZE)
-                    if not data:
-                        break
-                    md5.update(data)
-                ledger_hash[md5.hexdigest()] += 1
+            with open(path + '/'+ledger) as f:
+                s = ''.join(f.read().split('\n'))
+                ledger_list.append(s)
 
-        for count in ledger_hash:
-            if ledger_hash[count] > 2:
-                print('Safety Holds')
-            else:
-                print('Safety Violated')
+        num_faulty = self.config['nfaulty']
 
+        for li in ledger_list:
+
+            count = 0
+
+            for l in ledger_list:
+
+                if l.startswith(li):
+                    count += 1
+
+            if count >= 2 * num_faulty + 1:
+                return True
+
+        return False
 
     def check_liveliness():
-        path = os.path.realpath('../') + '/ledgers' + '/' + self.config_id
+        path = os.path.realpath('../') + '/ledgers' + '/' + 'config'+str(self.config_id)
         ledgers = os.listdir(path)
-        count = 0
+
+        threshold = 0.6 * self.config['nclients']
+
+        threshold_count = 0
+
         for ledger in ledgers:
             ledger_path = path + '/' + '/' + ledger
-            if os.stat(ledger_path).st_size == 0:
-                count += 1
+            with open(ledger_path) as f:
+                requests = f.read().split('\n')
+                _set = set()
+                for r in requests:
+                    client = r.split('-')
+                    _set.add(client[0])
+                if len(_set) >= threshold:
+                    threshold_count += 1
 
-        if count > 2:
-            print('Liveliness Holds')
-        else:
-            print('Liveliness Violated')
+        return threshold_count >= 2 * self.config['nfaulty'] + 1
 
     def exit_if_valid(round_no):
 
         if round_no > int(max(self.round_leaders_per_round.keys())):
             # Check Safety and Liveliness
-            check_safety()
-            check_liveliness()
-
+            safety = check_safety()
+            lively = check_liveliness()
+            # Sending Done to validators and clients
             send(('Done',), to=self.validator_list)
+            send(('Done'), to=self.clients)
             output('Network Hub is exiting as maximum rounds reached ', round_no)
+            with open('../ledgers/safety.txt', 'a') as f:
+                f.write('config'+str(self.config_id)+' Safety: '+str(safety)+'\n')
+            with open('../ledgers/liveliness.txt', 'a') as f:
+                f.write('config'+str(self.config_id)+' Liveliness: '+str(lively)+'\n')
             self.done = True
 
     def receive(msg=('Proposal', proposal_msg, dest), from_=p):
@@ -119,14 +143,9 @@ class NetworkHub(process):
             for d in destinations:
 
                 if self.should_send_proposal_msg(p, d, round_no):
-                    output('Sending, successfully')
                     send(('Proposal', proposal_msg, p), to=d)
-                else:
-                    output('Could not send')
                 if p in self.twins_process_ids and self.should_send_proposal_msg(self.twins_process_ids[p],d,round_no):
-                    output('Sending, successfully from twin')
                     send(('Proposal', proposal_msg, p), to=d)
-
 
         except Exception:
             print(traceback.format_exc())
