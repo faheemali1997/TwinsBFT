@@ -16,10 +16,19 @@
    Send to all nodes with normal node as leader
 """
 import json
+import os
 import sys
 from collections import defaultdict
+import hashlib
+import re
+
+
+
+# BUF_SIZE is totally arbitrary, change for your app!
+BUF_SIZE = 65536  # lets read stuff in 64kb chunks!
 
 sys.path.append('../../generator/testcase_1.json')
+sys.path.append('../config')
 
 
 # loop through array of partitions, partition[0] -> array of partitions
@@ -27,7 +36,6 @@ def get_partition_per_round(test_case):
     ans = defaultdict(list)
 
     for k, v in test_case['partitions'].items():
-
         ans[k].append(v[0])
 
     return ans
@@ -120,14 +128,98 @@ class NetworkHub:
         return False
 
 
+def check_safety():
+    path = os.path.realpath('../') + '/ledgers'
+    configs_gen = os.listdir(path)
+    for config in configs_gen:
+        if config == '.DS_Store':
+            continue
+        config_no = int(re.findall(r'\d+', config)[0])
+        ledgers = os.listdir(path + '/' + config)
+        ledger_hash = defaultdict(int)
+        for ledger in ledgers:
+            ledger_path = path + '/' + config + '/' + ledger
+            with open(ledger_path, 'rb') as f:
+                md5 = hashlib.md5()
+                while True:
+                    data = f.read(BUF_SIZE)
+                    if not data:
+                        break
+                    md5.update(data)
+                ledger_hash[md5.hexdigest()] += 1
+
+        for count in ledger_hash:
+            if ledger_hash[count] > 2:
+                print('Safety Holds')
+            else:
+                print('Safety Violated')
+
+def check_safety1():
+    path = os.path.realpath('../') + '/ledgers' + '/' + 'config0'
+    ledgers = os.listdir(path)
+    ledger_hash = defaultdict(int)
+    for ledger in ledgers:
+        ledger_path = path + '/' + '/' + ledger
+        with open(ledger_path, 'rb') as f:
+            md5 = hashlib.md5()
+            while True:
+                data = f.read(BUF_SIZE)
+                if not data:
+                    break
+                md5.update(data)
+            ledger_hash[md5.hexdigest()] += 1
+
+    for count in ledger_hash:
+        if ledger_hash[count] > 2:
+            print('Safety Holds')
+        else:
+            print('Safety Violated')
+
+def check_liveness():
+    path = os.path.realpath('../') + '/ledgers'
+    configs = os.listdir(path)
+    for config in configs:
+        if config == '.DS_Store':
+            continue
+        ledgers = os.listdir(path + '/' + config)
+        ledger_hash = defaultdict(int)
+        for ledger in ledgers:
+            ledger_path = path + '/' + config + '/' + ledger
+            if os.stat(ledger_path).st_size == 0:
+                ledger_hash[config] += 1
+
+        for count in ledger_hash:
+            if ledger_hash[count] > 4:
+                print('Liveliness Holds')
+            else:
+                print('Liveliness Violated')
+
+def check_liveness1():
+    path = os.path.realpath('../') + '/ledgers' + '/' + 'config0'
+    ledgers = os.listdir(path)
+    count = 0
+    for ledger in ledgers:
+        ledger_path = path + '/' + '/' + ledger
+        if os.stat(ledger_path).st_size == 0:
+            count += 1
+
+    if count > 2:
+        print('Liveness Holds')
+    else:
+        print('Liveness Violated')
+
 if __name__ == '__main__':
-    with open('../testcases/testcase_1.json') as f:
+    check_safety1()
+    check_liveness1()
 
-        data = json.load(f)
 
-        test_case_scenarios = data['test_case_scenarios']
-
-        for test in test_case_scenarios:
-            nh = NetworkHub(data, dict(), test[0])
-            val = nh.should_send_proposal_msg(0, 4, 1)
-            print(val)
+    # with open('../testcases/testcase_1.json') as f:
+    #
+    #     data = json.load(f)
+    #
+    #     test_case_scenarios = data['test_case_scenarios']
+    #
+    #     for test in test_case_scenarios:
+    #         nh = NetworkHub(data, dict(), test[0])
+    #         val = nh.should_send_proposal_msg(0, 4, 1)
+    #         print(val)

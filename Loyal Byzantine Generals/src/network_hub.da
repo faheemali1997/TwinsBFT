@@ -21,12 +21,16 @@ import json
 import sys
 from collections import defaultdict
 import traceback
+import hashlib
+import re
+
+BUF_SIZE = 65536  # lets read stuff in 64kb chunks!
 
 sys.path.append('../../generator/testcase_1.json')
 
 class NetworkHub(process):
 
-    def setup(validator_list,test_case, validators_map: dict, test_case_scenario, dist_algo_id_to_virtual_id_map):
+    def setup(config, config_id,validator_list,test_case, validators_map: dict, test_case_scenario, dist_algo_id_to_virtual_id_map):
 
         self.number_of_nodes = int(test_case['number_of_nodes'])
         self.number_of_twins = int(test_case['number_of_twins'])
@@ -43,6 +47,8 @@ class NetworkHub(process):
         self.dist_algo_id_to_virtual_id_map = dist_algo_id_to_virtual_id_map
         self.validator_list = validator_list
         self.done = False
+        self.config = config
+        self.config_id = config_id
 
     # Network hub receives all the proposal messages and then decides whether to forward or not.
     # if should_send_proposal_msg(p,d,round_no):
@@ -51,10 +57,49 @@ class NetworkHub(process):
 
         await(self.done)
 
+    def check_safety():
+        path = os.path.realpath('../') + '/ledgers' + '/' + self.config_id
+        ledgers = os.listdir(path)
+        ledger_hash = defaultdict(int)
+        for ledger in ledgers:
+            ledger_path = path + '/' + '/' + ledger
+            with open(ledger_path, 'rb') as f:
+                md5 = hashlib.md5()
+                while True:
+                    data = f.read(BUF_SIZE)
+                    if not data:
+                        break
+                    md5.update(data)
+                ledger_hash[md5.hexdigest()] += 1
+
+        for count in ledger_hash:
+            if ledger_hash[count] > 2:
+                print('Safety Holds')
+            else:
+                print('Safety Violated')
+
+
+    def check_liveliness():
+        path = os.path.realpath('../') + '/ledgers' + '/' + self.config_id
+        ledgers = os.listdir(path)
+        count = 0
+        for ledger in ledgers:
+            ledger_path = path + '/' + '/' + ledger
+            if os.stat(ledger_path).st_size == 0:
+                count += 1
+
+        if count > 2:
+            print('Liveliness Holds')
+        else:
+            print('Liveliness Violated')
+
     def exit_if_valid(round_no):
 
         if round_no > int(max(self.round_leaders_per_round.keys())):
-            # Check Safety and Liveness
+            # Check Safety and Liveliness
+            check_safety()
+            check_liveliness()
+
             send(('Done',), to=self.validator_list)
             output('Network Hub is exiting as maximum rounds reached ', round_no)
             self.done = True
