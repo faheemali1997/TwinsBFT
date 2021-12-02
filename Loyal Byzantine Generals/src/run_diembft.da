@@ -13,6 +13,7 @@ from cryptography import Cryptography
 from validator import ValidatorFI
 from generator import generator
 from network_hub import NetworkHub
+import traceback
 
 def get_twins(twins):
 
@@ -45,69 +46,74 @@ class RunDiemBFT(process):
 
     def run():
 
-        private_keys_validators = {}
-        public_keys_validators = {}
-        private_keys_clients = {}
-        public_keys_clients = {}
+        try:
 
-        os.makedirs('../logs/config' + str(config_id))
-        os.makedirs('../ledgers/config' + str(config_id))
+            private_keys_validators = {}
+            public_keys_validators = {}
+            private_keys_clients = {}
+            public_keys_clients = {}
 
-        network_hub = new(NetworkHub, num=1)
-        validators = new(ValidatorFI, num=total_nodes)
-        clients = new(Client, num=nclients)
+            os.makedirs('../logs/config' + str(config_id))
+            os.makedirs('../ledgers/config' + str(config_id))
 
-        validator_list = list(validators)
+            network_hub = new(NetworkHub, num=1)
+            validators = new(ValidatorFI, num=total_nodes)
+            clients = new(Client, num=nclients)
 
-        # This will create a map of distalgo process ids vs virtual indexes
-        for i, v in enumerate(list(validators)):
-            self.dist_algo_id_to_virtual_id_map[v] = i
+            validator_list = list(validators)
 
-        for k,v in self.twins.items():
-            self.twin_validator_mapping[validator_list[int(k)]] = validator_list[int(v)]
-            self.twin_validator_mapping[validator_list[int(v)]] = validator_list[int(k)]
+            # This will create a map of distalgo process ids vs virtual indexes
+            for i, v in enumerate(list(validators)):
+                self.dist_algo_id_to_virtual_id_map[v] = i
 
-        for v in validators:
-            v_twin = self.twin_validator_mapping.get(v,None)
-            if v_twin is not None and v_twin in private_keys_validators:
-                private_keys_validators[v] = private_keys_validators[v_twin]
-                public_keys_validators[v] = public_keys_validators[v_twin]
-                continue
-            private_key, public_key = Cryptography.generate_key()
-            private_keys_validators[v] = private_key
-            public_keys_validators[v] = public_key
+            for k,v in self.twins.items():
+                self.twin_validator_mapping[validator_list[int(k)]] = validator_list[int(v)]
+                self.twin_validator_mapping[validator_list[int(v)]] = validator_list[int(k)]
 
-        for c in clients:
-            private_key, public_key = Cryptography.generate_key()
-            private_keys_clients[c] = private_key
-            public_keys_clients[c] = public_key
+            for v in validators:
+                v_twin = self.twin_validator_mapping.get(v,None)
+                if v_twin is not None and v_twin in private_keys_validators:
+                    private_keys_validators[v] = private_keys_validators[v_twin]
+                    public_keys_validators[v] = public_keys_validators[v_twin]
+                    continue
+                private_key, public_key = Cryptography.generate_key()
+                private_keys_validators[v] = private_key
+                public_keys_validators[v] = public_key
 
-        validators_new_list = list(validators)[::]
+            for c in clients:
+                private_key, public_key = Cryptography.generate_key()
+                private_keys_clients[c] = private_key
+                public_keys_clients[c] = public_key
 
-        if (self.nfaulty) > 0:
-            validators_new_list = validators_new_list[:-self.nfaulty]
+            validators_new_list = list(validators)[::]
 
-        for i, v in enumerate(validators):
-            if i in self.twins:
-                setup({v}, (config, config_id, min(i, self.twins[i]), validators_new_list, list(clients),
-                        private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub, self.test_case_scenario))
-            else:
-                setup({v}, (config, config_id, i, validators_new_list, list(clients),
-                        private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub, self.test_case_scenario))
+            if (self.nfaulty) > 0:
+                validators_new_list = validators_new_list[:-self.nfaulty]
 
-        for i, c in enumerate(clients):
-            setup({c}, (config, config_id, i,validators_new_list,
-                        private_keys_clients[c], public_keys_validators))
+            for i, v in enumerate(validators):
+                if i in self.twins:
+                    setup({v}, (config, config_id, min(i, self.twins[i]), validators_new_list, list(clients),
+                            private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub, self.test_case_scenario))
+                else:
+                    setup({v}, (config, config_id, i, validators_new_list, list(clients),
+                            private_keys_validators[v], public_keys_validators, public_keys_clients, network_hub, self.test_case_scenario))
 
-        setup(network_hub, (self.test_case, self.twin_validator_mapping, self.test_case_scenario, self.dist_algo_id_to_virtual_id_map))
+            for i, c in enumerate(clients):
+                setup({c}, (config, config_id, i,validators_new_list,
+                            private_keys_clients[c], public_keys_validators))
 
-        start(network_hub)
-        start(validators)
-        start(clients)
+            setup(network_hub, (self.test_case, self.twin_validator_mapping, self.test_case_scenario, self.dist_algo_id_to_virtual_id_map))
 
-        await(each(c in clients, has=received(('Done',), from_=c)))
-        output("All clients done, informing all validators.", config_id)
-        send(('Done',), to=validators)
+            start(network_hub)
+            start(validators)
+            start(clients)
+
+            await(each(c in clients, has=received(('Done',), from_=c)))
+            output("All clients done, informing all validators.", config_id)
+            send(('Done',), to=validators)
+
+        except Exception:
+            print(traceback.format_exc())
 
 
 def is_config_valid(config):

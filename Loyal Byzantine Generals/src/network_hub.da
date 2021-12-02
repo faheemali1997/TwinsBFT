@@ -64,9 +64,12 @@ class NetworkHub(process):
                 if self.should_send_proposal_msg(p, d, round_no):
                     output('Sending, successfully')
                     send(('Proposal', proposal_msg, p), to=d)
+                else:
+                    output('Could not send')
                 if p in self.twins_process_ids and self.should_send_proposal_msg(self.twins_process_ids[p],d,round_no):
                     output('Sending, successfully from twin')
                     send(('Proposal', proposal_msg, p), to=d)
+
 
         except Exception:
             print(traceback.format_exc())
@@ -86,7 +89,6 @@ class NetworkHub(process):
                 if should_send_vote_msg(p,d,round_no):
                     send(('Vote', vote_msg,p), to=d)
 
-
         except Exception:
             print(traceback.format_exc())
 
@@ -102,7 +104,6 @@ class NetworkHub(process):
             round_no = timeout_msg.tmo_info.round
 
             send(('Timeout', timeout_msg, p), to=destinations)
-
 
         except Exception:
             print(traceback.format_exc())
@@ -127,12 +128,12 @@ class NetworkHub(process):
             output('Hey, I am dropping this message')
             return False
 
+
         if len(partitions) == 0:
             return True
 
         for partition in partitions[0]:
-
-            if p in partition and d in partition:
+            if virtual_p in partition and virtual_d in partition:
                 return True
 
         return False

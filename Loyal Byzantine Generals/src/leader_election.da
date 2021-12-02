@@ -33,6 +33,9 @@ class LeaderElection:
     '''Function get leader(round)'''
     def get_leader(self, round):
 
+        if round > self.max_round:
+            sys.exit('Suicide')
+
         if round not in self.round_leaders:
             return self.replicas[0]
 
